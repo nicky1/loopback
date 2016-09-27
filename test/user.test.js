@@ -2124,6 +2124,40 @@ describe('User', function() {
         },
       ], done);
     });
+
+    it('keeps sessions AS IS if partial update is done with age', function(done) {
+      var userPartial;
+      async.series([
+        function createPartialUser(next) {
+          User.create(
+                 { email: 'partial@example.com', password: 'pass1', age: 25 },
+                 function(err, partialInstance) {
+                   if (err) return next (err);
+                   userPartial = partialInstance;
+                   next();
+                 });
+        },
+        function loginPartiallUser(next) {
+          User.login({ email: 'partial@example.com', password: 'pass1' }, function(err, ats) {
+            if (err) return next (err);
+            next();
+          });
+        },
+        function updatePartialUser(next) {
+          userPartial.updateAttributes({ age: userPartial.age + 1 }, function(err, info) {
+            if (err) return next (err);
+            next();
+          });
+        },
+        function verifyTokensOfPartialUser(next) {
+          AccessToken.find({ where: { userId: userPartial.id }}, function(err, tokens1) {
+            if (err) return next (err);
+            expect(tokens1.length).to.equal(1);
+            next();
+          });
+        },
+      ], done);
+    });
   });
 
   describe('password reset with/without email verification', function() {
